@@ -119,11 +119,21 @@ def get_apps_with_categories(apps_df: pd.DataFrame,
         app_categories,
         left_on='id',
         right_on='app_id',
-        how='left'
+        how='left',
+        suffixes=(None, '_cat')
     )
     
+    # Drop the duplicate app_id column
+    if 'app_id' in result.columns:
+        result = result.drop('app_id', axis=1)
+    
     # Handle apps with no categories
-    result['categories'] = result['categories'].apply(lambda x: [] if pd.isna(x).any() else x)
+    def fill_empty_categories(x):
+        if isinstance(x, list):
+            return x
+        return []
+    
+    result['categories'] = result['categories'].apply(fill_empty_categories)
     
     return result
 
@@ -215,8 +225,12 @@ def create_master_dataset(
             reviews_summary_df,
             left_on='id',
             right_on='app_id',
-            how='left'
+            how='left',
+            suffixes=(None, '_review')
         )
+        # Drop the duplicate app_id column
+        if 'app_id' in master_df.columns:
+            master_df = master_df.drop('app_id', axis=1)
     
     # Add key benefits count if available
     if key_benefits_df is not None and not key_benefits_df.empty:
@@ -226,8 +240,12 @@ def create_master_dataset(
             benefits_count,
             left_on='id',
             right_on='app_id',
-            how='left'
+            how='left',
+            suffixes=(None, '_benefit')
         )
+        # Drop the duplicate app_id column
+        if 'app_id' in master_df.columns:
+            master_df = master_df.drop('app_id', axis=1)
         master_df['benefits_count'] = master_df['benefits_count'].fillna(0)
     
     # Add pricing plan counts if available
@@ -249,9 +267,14 @@ def create_master_dataset(
                 plan_counts,
                 left_on='id',
                 right_on='app_id',
-                how='left'
+                how='left',
+                suffixes=(None, '_plan')
             )
             
+            # Drop the duplicate app_id column
+            if 'app_id' in master_df.columns:
+                master_df = master_df.drop('app_id', axis=1)
+                
             # Fill missing plan counts with 0
             for col in plan_counts.columns:
                 if col != 'app_id' and col in master_df.columns:
